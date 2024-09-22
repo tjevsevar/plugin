@@ -172,7 +172,8 @@ figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
             figma.ui.postMessage({
                 type: 'taskCreated',
                 task: result,
-                figmaUrl: msg.selectionInfo // Add this line to include the Figma URL
+                figmaUrl: msg.selectionInfo,
+                taskUrl: result.url // Add this line to include the ClickUp task URL
             });
             figma.notify('Task created successfully!');
         }
@@ -214,7 +215,8 @@ function createClickUpTask(taskData) {
             }
             const result = yield response.json();
             console.log('Task created:', result);
-            return result;
+            return Object.assign(Object.assign({}, result), { url: result.url // Assuming the ClickUp API returns a 'url' field for the task
+             });
         }
         catch (error) {
             console.error('Error creating task:', error);

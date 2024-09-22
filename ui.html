@@ -339,6 +339,11 @@
       text-overflow: ellipsis;
       max-width: 100%;
     }
+    
+    .create-issue-btn:disabled {
+      background-color: #5EB0EF;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -349,7 +354,7 @@
     <div class="content">
       <div id="createdTaskInfo" style="display: none; margin-bottom: 16px;">
         <h3 style="font-size: 12px; margin-bottom: 8px; font-weight: 300; color: #7F7F7F;">On this page</h3>
-        <p id="createdTaskTitle" title=""></p>
+        <a id="createdTaskTitle" href="#" target="_blank" style="font-size: 12px; color: #0091FF; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; text-decoration: none;"></a>
         <a id="createdTaskLink" href="#" target="_blank" style="font-size: 10px; color: #7F7F7F; text-decoration: none;">Figma</a>
       </div>
       <button id="goToSecond">Create new task</button>
@@ -559,6 +564,7 @@
           const truncatedTitle = fullTitle.length > 40 ? fullTitle.substring(0, 37) + '...' : fullTitle;
           createdTaskTitle.textContent = truncatedTitle;
           createdTaskTitle.title = fullTitle; // Set the full title as a tooltip
+          createdTaskTitle.href = event.data.pluginMessage.taskUrl; // Set the ClickUp task URL
           
           createdTaskLink.href = event.data.pluginMessage.figmaUrl;
           createdTaskInfo.style.display = 'block';
