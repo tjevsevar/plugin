@@ -344,6 +344,59 @@
       background-color: #5EB0EF;
       cursor: not-allowed;
     }
+    
+    .search-container {
+      margin-bottom: 16px;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #E0E0E0;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .search-input:hover {
+      border-color: #0D99FF;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #0D99FF;
+    }
+    
+    .search-input::placeholder {
+      font-family: 'Inter', sans-serif;
+      color: #999;
+      font-size: 12px;
+      font-weight: 300;
+    }
+    
+    .search-results {
+      margin-top: 16px;
+      border: 1px solid #E0E0E0;
+      border-radius: 4px;
+      padding: 8px;
+    }
+    
+    .task-list {
+      margin-top: 16px;
+    }
+    
+    .task-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #E0E0E0;
+    }
+    
+    .task-item:last-child {
+      border-bottom: none;
+    }
+    
+    .task-item a {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -352,6 +405,24 @@
       <h2>Link a task</h2>
     </div>
     <div class="content">
+      <div class="dropdown-container">
+        <label for="spaceSelect" class="dropdown-label">Space</label>
+        <select id="spaceSelect" class="input-field dropdown" required>
+          <option value="" disabled selected>Choose a Space</option>
+        </select>
+      </div>
+      
+      <div class="dropdown-container">
+        <label for="listSelect" class="dropdown-label">List</label>
+        <select id="listSelect" class="input-field dropdown" required disabled>
+          <option value="" disabled selected>Choose a List</option>
+        </select>
+      </div>
+
+      <div id="taskList" class="task-list" style="display: none;">
+        <!-- Tasks will be populated here -->
+      </div>
+
       <div id="createdTaskInfo" style="display: none; margin-bottom: 16px;">
         <h3 style="font-size: 12px; margin-bottom: 8px; font-weight: 300; color: #7F7F7F;">On this page</h3>
         <a id="createdTaskTitle" href="#" target="_blank" style="font-size: 12px; color: #0091FF; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; text-decoration: none;"></a>
@@ -417,9 +488,11 @@
       const taskTitleInput = document.getElementById('taskTitle');
       const createTaskBtn = document.getElementById('createTaskBtn');
 
-      taskTitleInput.addEventListener('input', function() {
-        createTaskBtn.disabled = !this.value.trim();
-      });
+      if (taskTitleInput && createTaskBtn) {
+        taskTitleInput.addEventListener('input', function() {
+          createTaskBtn.disabled = !this.value.trim();
+        });
+      }
     });
 
     document.getElementById('goToSecond').onclick = () => {
@@ -470,30 +543,34 @@
       if (selectedSpace) {
         let hasLists = false;
 
-        // Add folderless lists
-        selectedSpace.folderlessLists.forEach(list => {
-          const option = document.createElement('option');
-          option.value = list.id;
-          option.textContent = list.name;
-          listDropdown.appendChild(option);
-          hasLists = true;
-        });
+        // Add lists directly under the space
+        if (selectedSpace.lists && selectedSpace.lists.length > 0) {
+          selectedSpace.lists.forEach(list => {
+            const option = document.createElement('option');
+            option.value = list.id;
+            option.textContent = list.name;
+            listDropdown.appendChild(option);
+            hasLists = true;
+          });
+        }
 
         // Add lists from folders
-        selectedSpace.folders.forEach(folder => {
-          if (folder.lists.length > 0) {
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = folder.name;
-            folder.lists.forEach(list => {
-              const option = document.createElement('option');
-              option.value = list.id;
-              option.textContent = list.name;
-              optgroup.appendChild(option);
-            });
-            listDropdown.appendChild(optgroup);
-            hasLists = true;
-          }
-        });
+        if (selectedSpace.folders && selectedSpace.folders.length > 0) {
+          selectedSpace.folders.forEach(folder => {
+            if (folder.lists && folder.lists.length > 0) {
+              const optgroup = document.createElement('optgroup');
+              optgroup.label = folder.name;
+              folder.lists.forEach(list => {
+                const option = document.createElement('option');
+                option.value = list.id;
+                option.textContent = list.name;
+                optgroup.appendChild(option);
+              });
+              listDropdown.appendChild(optgroup);
+              hasLists = true;
+            }
+          });
+        }
 
         if (hasLists) {
           listDropdown.disabled = false;
@@ -589,6 +666,10 @@
           createTaskBtn.textContent = 'Create task';
           createTaskBtn.disabled = false;
           // Optionally, you can show an error message to the user here
+        } else if (event.data.pluginMessage.type === 'searchResults') {
+          displaySearchResults(event.data.pluginMessage.tasks);
+        } else if (event.data.pluginMessage.type === 'tasks') {
+          displayTasks(event.data.pluginMessage.tasks);
         }
     };
 
@@ -615,6 +696,99 @@
         }
       }, '*');
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', debounce(function() {
+          const searchTerm = this.value.trim();
+          console.log('Search term:', searchTerm);
+          if (searchTerm.length >= 3) {
+            console.log('Sending search request to plugin');
+            parent.postMessage({ pluginMessage: { type: 'searchTasks', searchTerm } }, '*');
+          } else {
+            console.log('Search term too short, hiding results');
+            document.getElementById('searchResults').style.display = 'none';
+          }
+        }, 300));
+      } else {
+        console.error('Search input not found');
+      }
+    });
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    function displaySearchResults(tasks) {
+      console.log('Displaying search results:', tasks);
+      const searchResults = document.getElementById('searchResults');
+      searchResults.innerHTML = '';
+      searchResults.style.display = 'block';
+
+      if (tasks.length === 0) {
+        console.log('No tasks found');
+        searchResults.innerHTML = '<p>No tasks found.</p>';
+        return;
+      }
+
+      tasks.forEach(task => {
+        console.log('Creating task element:', task);
+        const taskElement = document.createElement('div');
+        taskElement.className = 'task-item';
+        taskElement.innerHTML = `
+          <a href="${task.url}" target="_blank" style="text-decoration: none; color: inherit;">
+            <h3 style="font-size: 14px; margin: 0 0 4px 0; color: #0091FF;">${task.name}</h3>
+          </a>
+        `;
+        searchResults.appendChild(taskElement);
+      });
+    }
+
+    document.getElementById('spaceSelect').addEventListener('change', function() {
+      const spaceId = this.value;
+      updateListsDropdown(spaceId);
+    });
+
+    document.getElementById('listSelect').addEventListener('change', function() {
+      const listId = this.value;
+      if (listId) {
+        parent.postMessage({ pluginMessage: { type: 'getTasks', listId } }, '*');
+      }
+    });
+
+    function displayTasks(tasks) {
+      const taskList = document.getElementById('taskList');
+      taskList.innerHTML = '';
+      taskList.style.display = 'block';
+
+      if (tasks.length === 0) {
+        taskList.innerHTML = '<p>No tasks found.</p>';
+        return;
+      }
+
+      tasks.forEach(task => {
+        const taskElement = document.createElement('div');
+        taskElement.className = 'task-item';
+        taskElement.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="${task.url}" target="_blank" style="text-decoration: none; color: inherit; flex-grow: 1;">
+              <h3 style="font-size: 12px; margin: 0; color: #000000;">${task.name}</h3>
+            </a>
+            <a href="${task.url}" target="_blank" style="text-decoration: none; font-size: 12px; color: #0091FF;">Link</a>
+          </div>
+        `;
+        taskList.appendChild(taskElement);
+      });
+    }
   </script>
 </body>
 </html>

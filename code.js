@@ -88,7 +88,7 @@ function fetchSpacesFoldersAndLists() {
             const spacesData = yield spacesResponse.json();
             const spaces = spacesData.spaces;
             console.log('Fetched spaces:', spaces);
-            // Fetch folders and lists for each space
+            // Update the fetchSpacesFoldersAndLists function to include lists directly under spaces
             const spacesWithFoldersAndLists = yield Promise.all(spaces.map((space) => __awaiter(this, void 0, void 0, function* () {
                 // Fetch folders
                 const foldersResponse = yield fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
@@ -121,24 +121,24 @@ function fetchSpacesFoldersAndLists() {
                     console.log(`Fetched lists for folder ${folder.id}:`, listsData);
                     return Object.assign(Object.assign({}, folder), { lists: listsData.lists || [] });
                 })));
-                // Fetch folderless lists
-                const folderlessListsResponse = yield fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+                // Fetch lists for the space
+                const listsResponse = yield fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
                     method: 'GET',
                     headers: {
                         'Authorization': API_KEY,
                         'Content-Type': 'application/json'
                     }
                 });
-                let folderlessLists = [];
-                if (folderlessListsResponse.ok) {
-                    const folderlessListsData = yield folderlessListsResponse.json();
-                    folderlessLists = folderlessListsData.lists || [];
-                    console.log(`Fetched folderless lists for space ${space.id}:`, folderlessLists);
+                let lists = [];
+                if (listsResponse.ok) {
+                    const listsData = yield listsResponse.json();
+                    lists = listsData.lists || [];
+                    console.log(`Fetched lists for space ${space.id}:`, lists);
                 }
                 else {
-                    console.error(`Error fetching folderless lists for space ${space.id}: ${folderlessListsResponse.status}`);
+                    console.error(`Error fetching lists for space ${space.id}: ${listsResponse.status}`);
                 }
-                return Object.assign(Object.assign({}, space), { folders: foldersWithLists, folderlessLists });
+                return Object.assign(Object.assign({}, space), { folders: foldersWithLists, lists });
             })));
             console.log('Spaces with folders and lists:', spacesWithFoldersAndLists);
             return spacesWithFoldersAndLists;
@@ -154,9 +154,34 @@ fetchSpacesFoldersAndLists().then(spacesWithFoldersAndLists => {
     console.log('Sending spacesWithFoldersAndLists to UI:', spacesWithFoldersAndLists);
     figma.ui.postMessage({ type: 'spacesWithFoldersAndLists', spacesWithFoldersAndLists });
 });
-// Make sure to include this in your message handler
+// Add this function to get tasks for a specific list
+function getTasks(listId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const API_KEY = 'pk_68593472_Y8ACWXHXWFKZIRF63AR1V1WQB62P0870';
+        try {
+            const response = yield fetch(`https://api.clickup.com/api/v2/list/${listId}/task?archived=false`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const result = yield response.json();
+            console.log('Tasks fetched:', result);
+            return result.tasks;
+        }
+        catch (error) {
+            console.error('Error fetching tasks:', error);
+            throw error;
+        }
+    });
+}
+// Update the message handler
 figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("Received message from UI:", msg);
+    console.log("Received message from UI:", msg); // Log all messages from UI
     if (msg.type === 'navigate') {
         console.log("Navigating to screen:", msg.screen);
         figma.ui.postMessage({ type: 'updateScreen', screen: msg.screen });
@@ -173,7 +198,7 @@ figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
                 type: 'taskCreated',
                 task: result,
                 figmaUrl: msg.selectionInfo,
-                taskUrl: result.url // Add this line to include the ClickUp task URL
+                taskUrl: result.url
             });
             figma.notify('Task created successfully!');
         }
@@ -185,6 +210,22 @@ figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
                 figma.ui.postMessage({ type: 'taskCreationError', error: 'An unknown error occurred' });
             }
             figma.notify('Error creating task. Please try again.');
+        }
+    }
+    else if (msg.type === 'getTasks') {
+        try {
+            const tasks = yield getTasks(msg.listId);
+            figma.ui.postMessage({ type: 'tasks', tasks });
+        }
+        catch (error) {
+            console.error('Error in getTasks:', error);
+            if (error instanceof Error) {
+                figma.ui.postMessage({ type: 'tasksError', error: error.message });
+            }
+            else {
+                figma.ui.postMessage({ type: 'tasksError', error: 'An unknown error occurred' });
+            }
+            figma.notify('Error fetching tasks. Please try again.');
         }
     }
 });

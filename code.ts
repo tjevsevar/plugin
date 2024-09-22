@@ -89,7 +89,7 @@ async function fetchSpacesFoldersAndLists() {
 
     console.log('Fetched spaces:', spaces);
 
-    // Fetch folders and lists for each space
+    // Update the fetchSpacesFoldersAndLists function to include lists directly under spaces
     const spacesWithFoldersAndLists = await Promise.all(spaces.map(async (space: any) => {
       // Fetch folders
       const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
@@ -131,8 +131,8 @@ async function fetchSpacesFoldersAndLists() {
         };
       }));
 
-      // Fetch folderless lists
-      const folderlessListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+      // Fetch lists for the space
+      const listsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
         method: 'GET',
         headers: {
           'Authorization': API_KEY,
@@ -140,19 +140,19 @@ async function fetchSpacesFoldersAndLists() {
         }
       });
 
-      let folderlessLists = [];
-      if (folderlessListsResponse.ok) {
-        const folderlessListsData = await folderlessListsResponse.json();
-        folderlessLists = folderlessListsData.lists || [];
-        console.log(`Fetched folderless lists for space ${space.id}:`, folderlessLists);
+      let lists = [];
+      if (listsResponse.ok) {
+        const listsData = await listsResponse.json();
+        lists = listsData.lists || [];
+        console.log(`Fetched lists for space ${space.id}:`, lists);
       } else {
-        console.error(`Error fetching folderless lists for space ${space.id}: ${folderlessListsResponse.status}`);
+        console.error(`Error fetching lists for space ${space.id}: ${listsResponse.status}`);
       }
 
       return {
         ...space,
         folders: foldersWithLists,
-        folderlessLists
+        lists
       };
     }));
 
@@ -170,9 +170,35 @@ fetchSpacesFoldersAndLists().then(spacesWithFoldersAndLists => {
   figma.ui.postMessage({ type: 'spacesWithFoldersAndLists', spacesWithFoldersAndLists });
 });
 
-// Make sure to include this in your message handler
+// Add this function to get tasks for a specific list
+async function getTasks(listId: string) {
+  const API_KEY = 'pk_68593472_Y8ACWXHXWFKZIRF63AR1V1WQB62P0870';
+
+  try {
+    const response = await fetch(`https://api.clickup.com/api/v2/list/${listId}/task?archived=false`, {
+      method: 'GET',
+      headers: {
+        'Authorization': API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Tasks fetched:', result);
+    return result.tasks;
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    throw error;
+  }
+}
+
+// Update the message handler
 figma.ui.onmessage = async (msg) => {
-  console.log("Received message from UI:", msg);
+  console.log("Received message from UI:", msg); // Log all messages from UI
   if (msg.type === 'navigate') {
     console.log("Navigating to screen:", msg.screen);
     figma.ui.postMessage({ type: 'updateScreen', screen: msg.screen });
@@ -187,7 +213,7 @@ figma.ui.onmessage = async (msg) => {
         type: 'taskCreated', 
         task: result,
         figmaUrl: msg.selectionInfo,
-        taskUrl: result.url // Add this line to include the ClickUp task URL
+        taskUrl: result.url
       });
       figma.notify('Task created successfully!');
     } catch (error: unknown) {
@@ -197,6 +223,19 @@ figma.ui.onmessage = async (msg) => {
         figma.ui.postMessage({ type: 'taskCreationError', error: 'An unknown error occurred' });
       }
       figma.notify('Error creating task. Please try again.');
+    }
+  } else if (msg.type === 'getTasks') {
+    try {
+      const tasks = await getTasks(msg.listId);
+      figma.ui.postMessage({ type: 'tasks', tasks });
+    } catch (error: unknown) {
+      console.error('Error in getTasks:', error);
+      if (error instanceof Error) {
+        figma.ui.postMessage({ type: 'tasksError', error: error.message });
+      } else {
+        figma.ui.postMessage({ type: 'tasksError', error: 'An unknown error occurred' });
+      }
+      figma.notify('Error fetching tasks. Please try again.');
     }
   }
 };
