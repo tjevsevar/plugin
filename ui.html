@@ -1,0 +1,355 @@
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      transition: transform 0.3s ease-in-out;
+      background-color: white;
+      display: flex;
+      flex-direction: column;
+    }
+    #mainScreen {
+      transform: translateX(0);
+    }
+    #secondScreen {
+      transform: translateX(100%);
+    }
+    .slide-out-left {
+      animation: slideOutLeft 0.3s ease-in-out forwards;
+    }
+    .slide-in-right {
+      animation: slideInRight 0.3s ease-in-out forwards;
+    }
+    .slide-out-right {
+      animation: slideOutRight 0.3s ease-in-out forwards;
+    }
+    .slide-in-left {
+      animation: slideInLeft 0.3s ease-in-out forwards;
+    }
+    @keyframes slideOutLeft {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+    @keyframes slideOutRight {
+      from { transform: translateX(0); }
+      to { transform: translateX(100%); }
+    }
+    @keyframes slideInLeft {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(0); }
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+    }
+    .header-centered {
+      justify-content: center;
+      position: relative;
+    }
+    .back-arrow {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      position: absolute;
+      left: 16px;
+    }
+    .back-arrow svg {
+      width: 14px;
+      height: 14px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .content {
+      padding: 16px;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    #goToSecond {
+      background-color: #0D99FF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    /* Add new styles for the second screen content */
+    .input-field {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 16px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 400;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+      background-color: #FFFFFF;
+    }
+    
+    .input-field:hover {
+      border-color: #E0E0E0; /* Light grey border on hover */
+      background-color: #FFFFFF; /* White background on hover */
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: #0D99FF;
+      background-color: #FFFFFF;
+    }
+    
+    .input-field::placeholder {
+      font-family: 'Inter', sans-serif;
+      color: #999;
+      font-size: 12px;
+      font-weight: 300;
+    }
+    
+    textarea.input-field {
+      resize: none;
+      height: 72px;
+    }
+    
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .tag {
+      display: flex;
+      align-items: center;
+      padding: 4px 8px;
+      background-color: #F0F0F0;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .tag img {
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+    }
+    
+    .attachments {
+      margin-top: 24px;
+    }
+    
+    .attachments-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .attachments-title {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .preset-group {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .attachment-info {
+      font-size: 10px;
+      font-weight: 400;
+      color: #666;
+    }
+    
+    .create-issue-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #0D99FF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      position: absolute;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      margin: 0 16px;
+      width: calc(100% - 32px);
+    }
+    
+    .button-spacer {
+      height: 60px;
+    }
+    
+    .selection-info {
+      margin-top: 16px;
+      font-size: 12px;
+    }
+    
+    .selection-url {
+      word-break: break-all;
+      color: #0D99FF;
+      text-decoration: none;
+    }
+    
+    .selection-error {
+      color: #FF4D4D;
+    }
+    
+    .file-name {
+      font-size: 10px;
+      color: #666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 50%;
+      display: flex;
+      align-items: center;
+    }
+    
+    .file-name-icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .file-name-icon svg {
+      width: 12px;
+      height: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="mainScreen" class="screen">
+    <div class="header">
+      <h2>Link a task</h2>
+    </div>
+    <div class="content">
+      <button id="goToSecond">Create new task</button>
+    </div>
+  </div>
+  <div id="secondScreen" class="screen">
+    <div class="header header-centered">
+      <button id="goToMain" class="back-arrow">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z" fill="#333333"/>
+        </svg>
+      </button>
+      <h2>Create new task</h2>
+    </div>
+    <div class="content">
+      <input type="text" class="input-field" placeholder="Task title">
+      <textarea class="input-field" placeholder="Add a description..." rows="3"></textarea>
+      
+      
+      <div class="attachments">
+        <div class="attachments-header">
+          <span class="attachments-title">Attachments</span>
+          <span id="fileName" class="file-name"></span>
+        </div>
+        <p class="attachment-info">Task will be linked to the selected frame.</p>
+        <div id="selectionInfo" class="selection-info"></div>
+      </div>
+      
+      <div class="button-spacer"></div>
+    </div>
+    <button class="create-issue-btn">Create task</button>
+  </div>
+
+  <script>
+    function focusTaskTitleInput() {
+        console.log("Attempting to focus task title input");
+        const taskTitleInput = document.querySelector('#secondScreen input.input-field');
+        if (taskTitleInput) {
+            taskTitleInput.focus();
+            console.log("Task title input focused");
+        } else {
+            console.log("Task title input not found");
+        }
+    }
+
+    document.getElementById('goToSecond').onclick = () => {
+        console.log("Create new task button clicked");
+        document.getElementById('mainScreen').classList.add('slide-out-left');
+        document.getElementById('secondScreen').classList.add('slide-in-right');
+        parent.postMessage({ pluginMessage: { type: 'navigate', screen: 'second' } }, '*');
+        console.log("Navigation message sent to plugin");
+        // Focus the task title input after a short delay to ensure the animation is complete
+        setTimeout(focusTaskTitleInput, 300);
+    };
+
+    document.getElementById('goToMain').onclick = () => {
+        document.getElementById('secondScreen').classList.add('slide-out-right');
+        document.getElementById('mainScreen').classList.add('slide-in-left');
+        parent.postMessage({ pluginMessage: { type: 'navigate', screen: 'main' } }, '*');
+    };
+
+    onmessage = (event) => {
+        console.log("Received message from plugin:", event.data.pluginMessage);
+        if (event.data.pluginMessage.type === 'updateScreen') {
+            console.log("Updating screen to:", event.data.pluginMessage.screen);
+            const screen = event.data.pluginMessage.screen;
+            if (screen === 'main') {
+                setTimeout(() => {
+                    document.getElementById('secondScreen').classList.remove('slide-in-right', 'slide-out-right');
+                    document.getElementById('mainScreen').classList.remove('slide-out-left', 'slide-in-left');
+                    document.getElementById('secondScreen').style.transform = 'translateX(100%)';
+                    document.getElementById('mainScreen').style.transform = 'translateX(0)';
+                }, 300);
+            } else if (screen === 'second') {
+                setTimeout(() => {
+                    document.getElementById('mainScreen').classList.remove('slide-out-left', 'slide-in-left');
+                    document.getElementById('secondScreen').classList.remove('slide-in-right', 'slide-out-right');
+                    document.getElementById('mainScreen').style.transform = 'translateX(-100%)';
+                    document.getElementById('secondScreen').style.transform = 'translateX(0)';
+                    focusTaskTitleInput();
+                }, 300);
+            }
+        } else if (event.data.pluginMessage.type === 'selectionUpdate') {
+            console.log("Updating selection info with URL:", event.data.pluginMessage.url);
+            const selectionInfo = document.getElementById('selectionInfo');
+            selectionInfo.innerHTML = `<a href="${event.data.pluginMessage.url}" class="selection-url" target="_blank">${event.data.pluginMessage.url}</a>`;
+            
+            // Update node name
+            const fileNameElement = document.getElementById('fileName');
+            fileNameElement.textContent = event.data.pluginMessage.nodeName || '';
+        } else if (event.data.pluginMessage.type === 'selectionError') {
+            console.log("Displaying selection error");
+            const selectionInfo = document.getElementById('selectionInfo');
+            selectionInfo.innerHTML = '<span class="selection-error">Invalid selection. Please select a frame, section, or page.</span>';
+            
+            // Clear node name on error
+            const fileNameElement = document.getElementById('fileName');
+            fileNameElement.textContent = '';
+        }
+    };
+
+    // Log when the script loads
+    console.log("UI script loaded");
+  </script>
+</body>
+</html>

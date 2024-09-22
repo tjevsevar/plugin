@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "name": "plugin",
+  "version": "1.0.0",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.2",
+    "typescript": "^5.6.2"
+  }
+}
