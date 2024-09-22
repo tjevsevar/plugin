@@ -249,6 +249,11 @@
       width: 12px;
       height: 12px;
     }
+    
+    .create-issue-btn:disabled {
+      background-color: #5EB0EF;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -270,7 +275,7 @@
       <h2>Create new task</h2>
     </div>
     <div class="content">
-      <input type="text" class="input-field" placeholder="Task title">
+      <input type="text" id="taskTitle" class="input-field" placeholder="Task title">
       <textarea class="input-field" placeholder="Add a description..." rows="3"></textarea>
       
       
@@ -285,7 +290,7 @@
       
       <div class="button-spacer"></div>
     </div>
-    <button class="create-issue-btn">Create task</button>
+    <button id="createTaskBtn" class="create-issue-btn" disabled>Create task</button>
   </div>
 
   <script>
@@ -299,6 +304,15 @@
             console.log("Task title input not found");
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const taskTitleInput = document.getElementById('taskTitle');
+      const createTaskBtn = document.getElementById('createTaskBtn');
+
+      taskTitleInput.addEventListener('input', function() {
+        createTaskBtn.disabled = !this.value.trim();
+      });
+    });
 
     document.getElementById('goToSecond').onclick = () => {
         console.log("Create new task button clicked");
