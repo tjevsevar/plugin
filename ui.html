@@ -528,6 +528,23 @@
 
     // Log when the script loads
     console.log("UI script loaded");
+
+    document.getElementById('createTaskBtn').addEventListener('click', function() {
+      const taskTitle = document.getElementById('taskTitle').value;
+      const taskDescription = document.querySelector('textarea.input-field').value;
+      const listId = document.getElementById('listSelect').value;
+      const selectionInfo = document.getElementById('selectionInfo').textContent;
+
+      parent.postMessage({
+        pluginMessage: {
+          type: 'createTask',
+          taskTitle,
+          taskDescription,
+          listId,
+          selectionInfo
+        }
+      }, '*');
+    });
   </script>
 </body>
 </html>

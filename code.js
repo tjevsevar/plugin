@@ -155,7 +155,7 @@ fetchSpacesFoldersAndLists().then(spacesWithFoldersAndLists => {
     figma.ui.postMessage({ type: 'spacesWithFoldersAndLists', spacesWithFoldersAndLists });
 });
 // Make sure to include this in your message handler
-figma.ui.onmessage = (msg) => {
+figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Received message from UI:", msg);
     if (msg.type === 'navigate') {
         console.log("Navigating to screen:", msg.screen);
@@ -166,9 +166,55 @@ figma.ui.onmessage = (msg) => {
             figma.ui.postMessage({ type: 'spacesWithFoldersAndLists', spacesWithFoldersAndLists });
         });
     }
-};
+    else if (msg.type === 'createTask') {
+        try {
+            const result = yield createClickUpTask(msg);
+            figma.ui.postMessage({ type: 'taskCreated', task: result });
+            figma.notify('Task created successfully!');
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                figma.ui.postMessage({ type: 'taskCreationError', error: error.message });
+            }
+            else {
+                figma.ui.postMessage({ type: 'taskCreationError', error: 'An unknown error occurred' });
+            }
+            figma.notify('Error creating task. Please try again.');
+        }
+    }
+});
 // Initial update
 console.log("Performing initial update");
 updateSelectionInfo();
 // Log when the plugin script loads
 console.log("Plugin script loaded");
+// Add this function to create a task
+function createClickUpTask(taskData) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const API_KEY = 'pk_68593472_Y8ACWXHXWFKZIRF63AR1V1WQB62P0870';
+        const LIST_ID = taskData.listId;
+        try {
+            const response = yield fetch(`https://api.clickup.com/api/v2/list/${LIST_ID}/task`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: taskData.taskTitle,
+                    description: `${taskData.taskDescription}\n\nFigma Link: ${taskData.selectionInfo}`,
+                })
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const result = yield response.json();
+            console.log('Task created:', result);
+            return result;
+        }
+        catch (error) {
+            console.error('Error creating task:', error);
+            throw error;
+        }
+    });
+}
