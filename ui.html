@@ -169,8 +169,9 @@
     }
     
     .attachments-title {
-      font-size: 14px;
-      font-weight: 500;
+      font-family: 'Inter';
+      font-size: 12px;
+      font-weight: 400;
     }
     
     .preset-group {
@@ -254,6 +255,47 @@
       background-color: #5EB0EF;
       cursor: not-allowed;
     }
+    
+    .dropdown-container {
+      margin-bottom: 12px;
+    }
+    
+    .dropdown-label {
+      display: block;
+      font-family: 'Inter';
+      font-size: 12px;
+      font-weight: 400;
+      margin-bottom: 4px;
+      color: #333;
+    }
+    
+    .dropdown {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23333333' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 24px;
+      font-size: 12px;
+    }
+    
+    .dropdown option {
+      font-size: 12px;
+      color: #333333; /* Default color for options */
+    }
+    
+    .dropdown option:first-child {
+      font-size: 10px;
+      color: #D4D4D4; /* Light gray color for the placeholder */
+    }
+    
+    /* New style for the select element when showing the placeholder */
+    .dropdown:invalid {
+      color: #D4D4D4; /* Light gray color for the placeholder text */
+    }
+    
+    .dropdown::-ms-expand {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -278,6 +320,16 @@
       <input type="text" id="taskTitle" class="input-field" placeholder="Task title">
       <textarea class="input-field" placeholder="Add a description..." rows="3"></textarea>
       
+      <div class="dropdown-container">
+        <label for="locatedIn" class="dropdown-label">Located in</label>
+        <select id="locatedIn" class="input-field dropdown">
+          <option value="" disabled selected>Choose a Space or Folder</option>
+          <option value="design">Design</option>
+          <option value="development">Development</option>
+          <option value="marketing">Marketing</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
       
       <div class="attachments">
         <div class="attachments-header">
