@@ -324,6 +324,21 @@
     .dropdown option:first-child {
       font-weight: normal;
     }
+    
+    .create-issue-btn:disabled {
+      background-color: #5EB0EF;
+      cursor: not-allowed;
+    }
+    
+    #createdTaskTitle {
+      font-size: 12px;
+      color: #0091FF;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -332,6 +347,11 @@
       <h2>Link a task</h2>
     </div>
     <div class="content">
+      <div id="createdTaskInfo" style="display: none; margin-bottom: 16px;">
+        <h3 style="font-size: 12px; margin-bottom: 8px; font-weight: 300; color: #7F7F7F;">On this page</h3>
+        <p id="createdTaskTitle" title=""></p>
+        <a id="createdTaskLink" href="#" target="_blank" style="font-size: 10px; color: #7F7F7F; text-decoration: none;">Figma</a>
+      </div>
       <button id="goToSecond">Create new task</button>
     </div>
   </div>
@@ -523,6 +543,46 @@
         } else if (event.data.pluginMessage.type === 'spacesWithFoldersAndLists') {
           console.log('Received spacesWithFoldersAndLists:', event.data.pluginMessage.spacesWithFoldersAndLists);
           populateSpacesDropdown(event.data.pluginMessage.spacesWithFoldersAndLists);
+        } else if (event.data.pluginMessage.type === 'taskCreated') {
+          console.log('Task created:', event.data.pluginMessage.task);
+          const createTaskBtn = document.getElementById('createTaskBtn');
+          createTaskBtn.textContent = 'Create task';
+          createTaskBtn.disabled = false;
+          
+          // Display the created task on the main screen
+          const createdTaskInfo = document.getElementById('createdTaskInfo');
+          const createdTaskTitle = document.getElementById('createdTaskTitle');
+          const createdTaskLink = document.getElementById('createdTaskLink');
+          
+          // Truncate the task title if it's longer than 40 characters
+          const fullTitle = event.data.pluginMessage.task.name;
+          const truncatedTitle = fullTitle.length > 40 ? fullTitle.substring(0, 37) + '...' : fullTitle;
+          createdTaskTitle.textContent = truncatedTitle;
+          createdTaskTitle.title = fullTitle; // Set the full title as a tooltip
+          
+          createdTaskLink.href = event.data.pluginMessage.figmaUrl;
+          createdTaskInfo.style.display = 'block';
+          
+          // Switch back to the main screen
+          document.getElementById('secondScreen').classList.add('slide-out-right');
+          document.getElementById('mainScreen').classList.add('slide-in-left');
+          setTimeout(() => {
+            document.getElementById('secondScreen').style.transform = 'translateX(100%)';
+            document.getElementById('mainScreen').style.transform = 'translateX(0)';
+          }, 300);
+          
+          // Reset the form
+          document.getElementById('taskTitle').value = '';
+          document.querySelector('textarea.input-field').value = '';
+          document.getElementById('spaceSelect').selectedIndex = 0;
+          document.getElementById('listSelect').innerHTML = '<option value="" disabled selected>Choose a List</option>';
+          document.getElementById('listSelect').disabled = true;
+        } else if (event.data.pluginMessage.type === 'taskCreationError') {
+          console.error('Error creating task:', event.data.pluginMessage.error);
+          const createTaskBtn = document.getElementById('createTaskBtn');
+          createTaskBtn.textContent = 'Create task';
+          createTaskBtn.disabled = false;
+          // Optionally, you can show an error message to the user here
         }
     };
 
@@ -534,6 +594,10 @@
       const taskDescription = document.querySelector('textarea.input-field').value;
       const listId = document.getElementById('listSelect').value;
       const selectionInfo = document.getElementById('selectionInfo').textContent;
+
+      // Change button text and disable it
+      this.textContent = 'Creating task...';
+      this.disabled = true;
 
       parent.postMessage({
         pluginMessage: {

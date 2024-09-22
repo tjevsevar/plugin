@@ -1,6 +1,6 @@
 /// <reference path="./global.d.ts" />
 
-figma.showUI(__html__, { width: 300, height: 600 });
+figma.showUI(__html__, { width: 300, height: 700 });
 
 function getFileUrl() {
   const fileKey = figma.fileKey;
@@ -183,7 +183,11 @@ figma.ui.onmessage = async (msg) => {
   } else if (msg.type === 'createTask') {
     try {
       const result = await createClickUpTask(msg);
-      figma.ui.postMessage({ type: 'taskCreated', task: result });
+      figma.ui.postMessage({ 
+        type: 'taskCreated', 
+        task: result,
+        figmaUrl: msg.selectionInfo // Add this line to include the Figma URL
+      });
       figma.notify('Task created successfully!');
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -217,7 +221,7 @@ async function createClickUpTask(taskData: any) {
       },
       body: JSON.stringify({
         name: taskData.taskTitle,
-        description: `${taskData.taskDescription}\n\nFigma Link: ${taskData.selectionInfo}`,
+        description: `${taskData.taskDescription}\n\n ${taskData.selectionInfo}`,
       })
     });
 
