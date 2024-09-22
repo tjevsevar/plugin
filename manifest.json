@@ -1,9 +1,12 @@
 {
-  "name": "Link Task Plugin",
+  "name": "Your Plugin Name",
   "id": "your-plugin-id",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": ["https://api.clickup.com"]
+  },
   "enablePrivatePluginApi": true,
   "editorType": [
     "figma",

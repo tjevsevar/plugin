@@ -270,12 +270,26 @@
     }
     
     .dropdown {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #E0E0E0;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
       appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23333333' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 8px center;
       padding-right: 24px;
-      font-size: 12px;
+    }
+    
+    .dropdown:hover {
+      border-color: #0D99FF;
+    }
+    
+    .dropdown:focus {
+      outline: none;
+      border-color: #0D99FF;
     }
     
     .dropdown option {
@@ -295,6 +309,20 @@
     
     .dropdown::-ms-expand {
       display: none;
+    }
+    
+    .dropdown optgroup {
+      font-weight: bold;
+      font-style: normal;
+      padding-left: 8px;
+    }
+    
+    .dropdown option {
+      padding-left: 16px;
+    }
+    
+    .dropdown option:first-child {
+      font-weight: normal;
     }
   </style>
 </head>
@@ -321,13 +349,16 @@
       <textarea class="input-field" placeholder="Add a description..." rows="3"></textarea>
       
       <div class="dropdown-container">
-        <label for="locatedIn" class="dropdown-label">Located in</label>
-        <select id="locatedIn" class="input-field dropdown">
-          <option value="" disabled selected>Choose a Space or Folder</option>
-          <option value="design">Design</option>
-          <option value="development">Development</option>
-          <option value="marketing">Marketing</option>
-          <option value="other">Other</option>
+        <label for="spaceSelect" class="dropdown-label">Space</label>
+        <select id="spaceSelect" class="input-field dropdown" required>
+          <option value="" disabled selected>Choose a Space</option>
+        </select>
+      </div>
+      
+      <div class="dropdown-container">
+        <label for="listSelect" class="dropdown-label">List</label>
+        <select id="listSelect" class="input-field dropdown" required disabled>
+          <option value="" disabled selected>Choose a List</option>
         </select>
       </div>
       
@@ -382,6 +413,76 @@
         parent.postMessage({ pluginMessage: { type: 'navigate', screen: 'main' } }, '*');
     };
 
+    let spacesWithFoldersAndListsData = [];
+
+    function populateSpacesDropdown(spacesWithFoldersAndLists) {
+      console.log('Populating spaces dropdown:', spacesWithFoldersAndLists);
+      spacesWithFoldersAndListsData = spacesWithFoldersAndLists;
+      const spaceDropdown = document.getElementById('spaceSelect');
+      spaceDropdown.innerHTML = '<option value="" disabled selected>Choose a Space</option>';
+      
+      spacesWithFoldersAndLists.forEach(space => {
+        const option = document.createElement('option');
+        option.value = space.id;
+        option.textContent = space.name;
+        spaceDropdown.appendChild(option);
+      });
+
+      spaceDropdown.addEventListener('change', function() {
+        updateListsDropdown(this.value);
+      });
+    }
+
+    function updateListsDropdown(spaceId) {
+      console.log('Updating lists dropdown for space:', spaceId);
+      const listDropdown = document.getElementById('listSelect');
+      listDropdown.innerHTML = '<option value="" disabled selected>Choose a List</option>';
+      listDropdown.disabled = true;
+      
+      const selectedSpace = spacesWithFoldersAndListsData.find(space => space.id === spaceId);
+      console.log('Selected space:', selectedSpace);
+      
+      if (selectedSpace) {
+        let hasLists = false;
+
+        // Add folderless lists
+        selectedSpace.folderlessLists.forEach(list => {
+          const option = document.createElement('option');
+          option.value = list.id;
+          option.textContent = list.name;
+          listDropdown.appendChild(option);
+          hasLists = true;
+        });
+
+        // Add lists from folders
+        selectedSpace.folders.forEach(folder => {
+          if (folder.lists.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = folder.name;
+            folder.lists.forEach(list => {
+              const option = document.createElement('option');
+              option.value = list.id;
+              option.textContent = list.name;
+              optgroup.appendChild(option);
+            });
+            listDropdown.appendChild(optgroup);
+            hasLists = true;
+          }
+        });
+
+        if (hasLists) {
+          listDropdown.disabled = false;
+        } else {
+          const option = document.createElement('option');
+          option.value = "";
+          option.textContent = "No lists available";
+          listDropdown.appendChild(option);
+        }
+      } else {
+        console.log('No space found with id:', spaceId);
+      }
+    }
+
     onmessage = (event) => {
         console.log("Received message from plugin:", event.data.pluginMessage);
         if (event.data.pluginMessage.type === 'updateScreen') {
@@ -419,6 +520,9 @@
             // Clear node name on error
             const fileNameElement = document.getElementById('fileName');
             fileNameElement.textContent = '';
+        } else if (event.data.pluginMessage.type === 'spacesWithFoldersAndLists') {
+          console.log('Received spacesWithFoldersAndLists:', event.data.pluginMessage.spacesWithFoldersAndLists);
+          populateSpacesDropdown(event.data.pluginMessage.spacesWithFoldersAndLists);
         }
     };
 

@@ -1,5 +1,14 @@
 "use strict";
 /// <reference path="./global.d.ts" />
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 figma.showUI(__html__, { width: 300, height: 600 });
 function getFileUrl() {
     const fileKey = figma.fileKey;
@@ -60,11 +69,102 @@ figma.on('selectionchange', () => {
     console.log("Selection changed");
     updateSelectionInfo();
 });
+// Function to fetch Spaces, Folders, and Lists
+function fetchSpacesFoldersAndLists() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const API_KEY = 'pk_68593472_Y8ACWXHXWFKZIRF63AR1V1WQB62P0870';
+        const TEAM_ID = '9015554267';
+        try {
+            const spacesResponse = yield fetch(`https://api.clickup.com/api/v2/team/${TEAM_ID}/space`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!spacesResponse.ok) {
+                throw new Error(`HTTP error! status: ${spacesResponse.status}`);
+            }
+            const spacesData = yield spacesResponse.json();
+            const spaces = spacesData.spaces;
+            console.log('Fetched spaces:', spaces);
+            // Fetch folders and lists for each space
+            const spacesWithFoldersAndLists = yield Promise.all(spaces.map((space) => __awaiter(this, void 0, void 0, function* () {
+                // Fetch folders
+                const foldersResponse = yield fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!foldersResponse.ok) {
+                    console.error(`Error fetching folders for space ${space.id}: ${foldersResponse.status}`);
+                    return Object.assign(Object.assign({}, space), { folders: [] });
+                }
+                const foldersData = yield foldersResponse.json();
+                console.log(`Fetched folders for space ${space.id}:`, foldersData);
+                // Fetch lists for each folder
+                const foldersWithLists = yield Promise.all(foldersData.folders.map((folder) => __awaiter(this, void 0, void 0, function* () {
+                    const listsResponse = yield fetch(`https://api.clickup.com/api/v2/folder/${folder.id}/list`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': API_KEY,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (!listsResponse.ok) {
+                        console.error(`Error fetching lists for folder ${folder.id}: ${listsResponse.status}`);
+                        return Object.assign(Object.assign({}, folder), { lists: [] });
+                    }
+                    const listsData = yield listsResponse.json();
+                    console.log(`Fetched lists for folder ${folder.id}:`, listsData);
+                    return Object.assign(Object.assign({}, folder), { lists: listsData.lists || [] });
+                })));
+                // Fetch folderless lists
+                const folderlessListsResponse = yield fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                let folderlessLists = [];
+                if (folderlessListsResponse.ok) {
+                    const folderlessListsData = yield folderlessListsResponse.json();
+                    folderlessLists = folderlessListsData.lists || [];
+                    console.log(`Fetched folderless lists for space ${space.id}:`, folderlessLists);
+                }
+                else {
+                    console.error(`Error fetching folderless lists for space ${space.id}: ${folderlessListsResponse.status}`);
+                }
+                return Object.assign(Object.assign({}, space), { folders: foldersWithLists, folderlessLists });
+            })));
+            console.log('Spaces with folders and lists:', spacesWithFoldersAndLists);
+            return spacesWithFoldersAndLists;
+        }
+        catch (error) {
+            console.error('Error fetching spaces, folders, and lists:', error);
+            return [];
+        }
+    });
+}
+// Fetch spaces, folders, and lists when the plugin starts
+fetchSpacesFoldersAndLists().then(spacesWithFoldersAndLists => {
+    console.log('Sending spacesWithFoldersAndLists to UI:', spacesWithFoldersAndLists);
+    figma.ui.postMessage({ type: 'spacesWithFoldersAndLists', spacesWithFoldersAndLists });
+});
+// Make sure to include this in your message handler
 figma.ui.onmessage = (msg) => {
     console.log("Received message from UI:", msg);
     if (msg.type === 'navigate') {
         console.log("Navigating to screen:", msg.screen);
         figma.ui.postMessage({ type: 'updateScreen', screen: msg.screen });
+    }
+    else if (msg.type === 'fetchSpacesFoldersAndLists') {
+        fetchSpacesFoldersAndLists().then(spacesWithFoldersAndLists => {
+            figma.ui.postMessage({ type: 'spacesWithFoldersAndLists', spacesWithFoldersAndLists });
+        });
     }
 };
 // Initial update
