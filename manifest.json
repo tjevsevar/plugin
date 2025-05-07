@@ -1,6 +1,6 @@
 {
-  "name": "Your Plugin Name",
-  "id": "your-plugin-id",
+  "name": "Figma to ClickUp",
+  "id": "figma-to-clickup-plugin",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
@@ -13,3 +13,4 @@
     "figjam"
   ]
 }
+

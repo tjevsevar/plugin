@@ -1,6 +1,7 @@
 /// <reference path="./global.d.ts" />
 
-figma.showUI(__html__, { width: 300, height: 700 });
+// Update the plugin window size to better fit our new UI
+figma.showUI(__html__, { width: 320, height: 480 });
 
 function getFileUrl() {
   const fileKey = figma.fileKey;
